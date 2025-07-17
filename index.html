@@ -84,9 +84,6 @@
 
   <div class="actions">
     <button onclick="ajouterDossier()">➕ Ajouter</button>
-    <button onclick="exporterExcel()">📊 Exporter Excel</button>
-    <button onclick="sauvegarderFichier()">💾 Sauvegarder</button>
-    <input type="file" id="importJson" accept=".json" onchange="importerFichier()" />
   </div>
   <div id="notif"></div>
 
@@ -94,47 +91,7 @@
   <label>Filtrer par statut :</label>
   <select id="filtreStatut" onchange="afficherDossiers()">
     <option value="">Tous</option>
-    <option>Anomalie recommandée</option>
-    <option>Demande de subvention</option>
-    <option>Subvention non déposable</option>
-    <option>En attente octroi</option>
-    <option>Anomalie octroi</option>
-    <option>Octroi accepté</option>
-    <option>Octroi rejeté</option>
-    <option>Pas mandataire</option>
-    <option>En attente de traitement</option>
-    <option>SAV avant dépôt</option>
-    <option>Non déposable NRP client</option>
-    <option>Non déposable</option>
-    <option>Bon à déposer</option>
-    <option>En cours instruction</option>
-    <option>Contrôle renforcé</option>
-    <option>Anomalie</option>
-    <option>1ère relance</option>
-    <option>2ème relance</option>
-    <option>3ème relance</option>
-    <option>Anomalie consentement</option>
-    <option>Attente de consentement</option>
-    <option>Consentement répondu</option>
-    <option>Contrôle MPR Veritas</option>
-    <option>Attente RDV Veritas</option>
-    <option>RDV Veritas fixé</option>
-    <option>Absent / refus CSP</option>
-    <option>Absent / refus CSP répondu</option>
-    <option>RDV Veritas non honoré</option>
-    <option>CSP réalisé</option>
-    <option>Anomalie Veritas</option>
-    <option>Anomalie Veritas répondue</option>
-    <option>Contestation du CSP</option>
-    <option>Blocage prime &gt;20K€</option>
-    <option>Montant inférieur</option>
-    <option>Lettre versement reçue</option>
-    <option>Annulé</option>
-    <option>Révocation mandat</option>
-    <option>Retrait subvention</option>
-    <option>Retrait à redéposer</option>
-    <option>Retrait de subvention définitif</option>
-    <option>Recours en cours</option>
+    <!-- les mêmes options que ci-dessus -->
   </select>
 
   <table>
@@ -150,7 +107,6 @@
   <script>
     let dossiers = JSON.parse(localStorage.getItem('dossiers') || '[]');
     afficherDossiers();
-    checkRappels();
 
     function ajouterDossier() {
       const client = document.getElementById('client').value.trim();
@@ -169,12 +125,35 @@
 
       dossiers.push({ client, dossier, mpr, statut, tel, mail, adresse, rappel, materiel, doc, commentaire });
       localStorage.setItem('dossiers', JSON.stringify(dossiers));
-
-      // Reset champs
       document.querySelectorAll('input, textarea').forEach(e => e.value = "");
       afficherDossiers();
     }
 
     function afficherDossiers() {
       const filtre = document.getElementById('filtreStatut').value;
-      const tbody
+      const tbody = document.getElementById('tableau');
+      tbody.innerHTML = "";
+
+      dossiers
+        .filter(d => !filtre || d.statut === filtre)
+        .forEach(d => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${d.client}</td>
+            <td>${d.dossier}</td>
+            <td>${d.mpr}</td>
+            <td>${d.statut}</td>
+            <td>${d.tel}</td>
+            <td>${d.mail}</td>
+            <td>${d.adresse}</td>
+            <td>${d.rappel}</td>
+            <td>${d.materiel}</td>
+            <td>${d.doc}</td>
+            <td>${d.commentaire}</td>
+          `;
+          tbody.appendChild(row);
+        });
+    }
+  </script>
+</body>
+</html>
