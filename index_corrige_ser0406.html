@@ -1,0 +1,185 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Suivi de Dossiers</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+    table { border-collapse: collapse; width: 100%; margin-top: 20px; background: white; }
+    th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+    th { background: #2196f3; color: white; }
+    tr:nth-child(even) { background: #f9f9f9; }
+    input, select, textarea { padding: 5px; margin: 5px 0; width: 100%; box-sizing: border-box; }
+    .form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; background: white; padding: 15px; border-radius: 8px; }
+    .form > div { display: flex; flex-direction: column; }
+    .actions { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 10px; }
+    button { padding: 8px 12px; cursor: pointer; border: none; border-radius: 4px; font-weight: bold; }
+    .add { background: #03a9f4; color: white; }
+    .update { background: #4caf50; color: white; }
+    .edit { background: #ff9800; color: white; }
+    .delete { background: #f44336; color: white; }
+    #notif { color: green; font-weight: bold; margin-top: 10px; }
+    #login { max-width: 300px; margin: 100px auto; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <div id="login">
+    <h2>Connexion</h2>
+    <input type="password" id="password" placeholder="Mot de passe" />
+    <button onclick="verifierMotDePasse()">Se connecter</button>
+    <p id="erreur" style="color:red;"></p>
+  </div>
+
+  <div id="contenu" style="display:none;">
+    <h1>Suivi de Dossiers</h1>
+
+    <div class="form">
+      <div><label>Client</label><input id="client" type="text" /></div>
+      <div><label>Dossier</label><input id="dossier" type="text" /></div>
+      <div><label>Numéro MPR</label><input id="mpr" type="text" /></div>
+      <div><label>Statut</label><select id="statut"></select></div>
+      <div><label>Téléphone</label><input id="tel" type="text" /></div>
+      <div><label>Mail</label><input id="mail" type="email" /></div>
+      <div><label>Adresse</label><input id="adresse" type="text" /></div>
+      <div><label>Date de rappel</label><input id="rappel" type="date" /></div>
+      <div><label>Matériel installé</label><input id="materiel" type="text" /></div>
+      <div><label>Document</label><input id="doc" type="file" /></div>
+      <div style="grid-column: span 3;"><label>Commentaire</label><textarea id="commentaire" rows="3"></textarea></div>
+    </div>
+
+    <div class="actions">
+      <button id="btnAjouter" class="add" onclick="ajouterDossier()">➕ Ajouter</button>
+      <input type="text" id="rechercheMPR" placeholder="🔎 Rechercher par MPR..." oninput="afficherDossiers()" />
+      <select id="filtreStatut" onchange="afficherDossiers()">
+        <option value="">-- Filtrer par statut --</option>
+      </select>
+    </div>
+
+    <div id="notif"></div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Client</th><th>Dossier</th><th>MPR</th><th>Statut</th><th>Téléphone</th><th>Mail</th><th>Adresse</th>
+          <th>Date rappel</th><th>Matériel</th><th>Document</th><th>Commentaire</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tableau"></tbody>
+    </table>
+  </div>
+
+  <script>
+    const motDePasse = "Ser0406";
+    const statuts = ["Anomalie recommandée", "Demande de subvention", "Subvention non déposable", "En attente octroi", "Octroi accepté", "Octroi rejeté"];
+    let dossiers = JSON.parse(localStorage.getItem("dossiers") || "[]");
+    let indexModif = null;
+
+    const selectStatut = document.getElementById("statut");
+    const filtreStatut = document.getElementById("filtreStatut");
+    statuts.forEach(s => {
+      const opt1 = document.createElement("option");
+      opt1.textContent = s;
+      selectStatut.appendChild(opt1);
+
+      const opt2 = document.createElement("option");
+      opt2.textContent = s;
+      filtreStatut.appendChild(opt2);
+    });
+
+    function verifierMotDePasse() {
+      const mdp = document.getElementById("password").value;
+      if (mdp === motDePasse) {
+        document.getElementById("login").style.display = "none";
+        document.getElementById("contenu").style.display = "block";
+        afficherDossiers();
+      } else {
+        document.getElementById("erreur").textContent = "Mot de passe incorrect.";
+      }
+    }
+
+    function afficherNotif(message) {
+      const notif = document.getElementById("notif");
+      notif.textContent = message;
+      setTimeout(() => notif.textContent = "", 3000);
+    }
+
+    function ajouterDossier() {
+      const d = {
+        client: client.value.trim(),
+        dossier: dossier.value.trim(),
+        mpr: mpr.value.trim(),
+        statut: statut.value,
+        tel: tel.value.trim(),
+        mail: mail.value.trim(),
+        adresse: adresse.value.trim(),
+        rappel: rappel.value,
+        materiel: materiel.value.trim(),
+        doc: doc.files[0]?.name || "",
+        commentaire: commentaire.value.trim()
+      };
+      if (!d.client || !d.dossier) return alert("Client et Dossier sont obligatoires.");
+
+      if (indexModif !== null) {
+        dossiers[indexModif] = d;
+        indexModif = null;
+        btnAjouter.textContent = "➕ Ajouter";
+        btnAjouter.className = "add";
+        afficherNotif("✅ Dossier mis à jour !");
+      } else {
+        dossiers.push(d);
+        afficherNotif("✅ Dossier ajouté !");
+      }
+
+      localStorage.setItem("dossiers", JSON.stringify(dossiers));
+      document.querySelectorAll("input, textarea").forEach(e => e.value = "");
+      afficherDossiers();
+    }
+
+    function modifierDossier(i) {
+      const d = dossiers[i];
+      Object.entries(d).forEach(([key, val]) => {
+        if (document.getElementById(key)) document.getElementById(key).value = val;
+      });
+      indexModif = i;
+      btnAjouter.textContent = "✅ Mettre à jour";
+      btnAjouter.className = "update";
+    }
+
+    function supprimerDossier(i) {
+      if (confirm("Voulez-vous vraiment supprimer ce dossier ?")) {
+        dossiers.splice(i, 1);
+        localStorage.setItem("dossiers", JSON.stringify(dossiers));
+        afficherDossiers();
+        afficherNotif("🗑️ Dossier supprimé.");
+      }
+    }
+
+    function afficherDossiers() {
+      const tableau = document.getElementById("tableau");
+      tableau.innerHTML = "";
+      const filtreMPR = document.getElementById("rechercheMPR").value.trim().toLowerCase();
+      const filtreStat = document.getElementById("filtreStatut").value;
+
+      dossiers
+        .filter(d => (!filtreMPR || d.mpr.toLowerCase().includes(filtreMPR)) && (!filtreStat || d.statut === filtreStat))
+        .forEach((d, i) => {
+          const row = document.createElement("tr");
+          Object.values(d).forEach(val => {
+            const td = document.createElement("td");
+            td.textContent = val;
+            row.appendChild(td);
+          });
+          const actions = document.createElement("td");
+          actions.innerHTML = \`
+            <button class="edit" onclick="modifierDossier(\${i})">🖊️</button>
+            <button class="delete" onclick="supprimerDossier(\${i})">🗑️</button>
+          \`;
+          row.appendChild(actions);
+          tableau.appendChild(row);
+        });
+    }
+  </script>
+</body>
+</html>
